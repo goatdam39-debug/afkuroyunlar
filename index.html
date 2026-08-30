@@ -1,0 +1,1912 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>AFKUR RACER</title>
+
+<style>
+*{
+    box-sizing:border-box;
+    user-select:none;
+    -webkit-user-select:none;
+}
+
+html,body{
+    margin:0;
+    width:100%;
+    height:100%;
+    overflow:hidden;
+    background:#07070b;
+    font-family:Arial,sans-serif;
+}
+
+canvas{
+    display:block;
+    width:100%;
+    height:100%;
+}
+
+button{
+    border:0;
+    border-radius:13px;
+    padding:13px 22px;
+    margin:6px;
+    background:#6c63ff;
+    color:white;
+    font-size:16px;
+    font-weight:bold;
+    cursor:pointer;
+}
+
+button:hover{
+    background:#827bff;
+}
+
+button:active{
+    transform:scale(.96);
+}
+
+.screen{
+    position:fixed;
+    inset:0;
+    z-index:100;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    text-align:center;
+    color:white;
+    background:
+        radial-gradient(circle at center,#25254a,#08080d 70%);
+}
+
+.screen h1{
+    margin:0;
+    font-size:clamp(45px,10vw,85px);
+    text-shadow:0 0 30px #6c63ff;
+}
+
+.screen p{
+    color:#aaa;
+}
+
+#garage{
+    display:none;
+    position:fixed;
+    inset:0;
+    z-index:90;
+    overflow:auto;
+    padding:20px;
+    color:white;
+    text-align:center;
+    background:linear-gradient(#1c1c35,#07070c);
+}
+
+#garage h1{
+    font-size:45px;
+}
+
+#garageMoney{
+    color:#ffd43b;
+    font-size:24px;
+    font-weight:bold;
+    margin-bottom:15px;
+}
+
+.cars{
+    width:min(1100px,100%);
+    margin:auto;
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+    gap:15px;
+}
+
+.card{
+    background:#151520;
+    border:2px solid #292940;
+    border-radius:18px;
+    padding:15px;
+}
+
+.card.selected{
+    border-color:#6c63ff;
+    box-shadow:0 0 25px #6c63ff55;
+}
+
+.preview{
+    width:60px;
+    height:105px;
+    border-radius:15px;
+    margin:15px auto;
+    position:relative;
+}
+
+.preview:before{
+    content:"";
+    position:absolute;
+    width:40px;
+    height:30px;
+    left:10px;
+    top:15px;
+    background:#16202b;
+    border-radius:7px;
+}
+
+.preview:after{
+    content:"";
+    position:absolute;
+    width:8px;
+    height:25px;
+    left:-7px;
+    top:25px;
+    background:#050505;
+    box-shadow:
+        66px 0 #050505,
+        0 50px #050505,
+        66px 50px #050505;
+}
+
+#hud{
+    display:none;
+    position:fixed;
+    left:10px;
+    top:10px;
+    z-index:30;
+    padding:12px 15px;
+    border-radius:13px;
+    background:#000b;
+    color:white;
+    line-height:1.55;
+}
+
+#hud b{
+    color:#8c84ff;
+}
+
+#menuBtn{
+    display:none;
+    position:fixed;
+    right:10px;
+    top:10px;
+    z-index:40;
+    background:#000b;
+}
+
+#controls{
+    display:none;
+    position:fixed;
+    bottom:12px;
+    left:0;
+    width:100%;
+    z-index:40;
+    padding:0 12px;
+    justify-content:space-between;
+    align-items:end;
+    pointer-events:none;
+}
+
+.dpad{
+    display:grid;
+    grid-template-columns:58px 58px 58px;
+    grid-template-rows:58px 58px;
+    gap:5px;
+    pointer-events:auto;
+}
+
+.key{
+    width:58px;
+    height:58px;
+    border:2px solid white;
+    border-radius:15px;
+    background:#000b;
+    color:white;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    font-weight:bold;
+    font-size:22px;
+    touch-action:none;
+}
+
+.key:active{
+    background:#6c63ff;
+}
+
+#up{
+    grid-column:2;
+}
+
+#left{
+    grid-column:1;
+}
+
+#down{
+    grid-column:2;
+}
+
+#right{
+    grid-column:3;
+}
+
+.special{
+    display:flex;
+    gap:7px;
+    pointer-events:auto;
+}
+
+.special .key{
+    width:82px;
+    font-size:12px;
+}
+
+#result{
+    display:none;
+    position:fixed;
+    inset:0;
+    z-index:80;
+    justify-content:center;
+    align-items:center;
+    flex-direction:column;
+    text-align:center;
+    color:white;
+    background:#000d;
+}
+
+#result h1{
+    color:#ff5555;
+    font-size:45px;
+}
+
+.stat{
+    color:#ccc;
+    margin:5px;
+}
+
+@media(min-width:900px){
+    #controls{
+        opacity:.18;
+    }
+
+    #controls:hover{
+        opacity:1;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<canvas id="game"></canvas>
+
+<!-- ================= ANA MENÜ ================= -->
+
+<div id="menu" class="screen">
+
+    <h1>🏎️ AFKUR RACER</h1>
+
+    <p>♾️ SONSUZ ŞEHİR YARIŞI</p>
+
+    <button onclick="startRace()">
+        🏁 YARIŞA BAŞLA
+    </button>
+
+    <button onclick="openGarage()">
+        🏠 GARAJ
+    </button>
+
+    <button onclick="toggleDayNight()">
+        🌙 GÜNDÜZ / GECE
+    </button>
+
+    <p>
+        💰 Para:
+        <span id="menuMoney">1000</span>
+    </p>
+
+</div>
+
+
+<!-- ================= GARAJ ================= -->
+
+<div id="garage">
+
+    <h1>🏠 AFKUR GARAJ</h1>
+
+    <div id="garageMoney">
+        💰 1000
+    </div>
+
+    <div id="cars" class="cars"></div>
+
+    <button onclick="goMenu()">
+        ← ANA MENÜ
+    </button>
+
+</div>
+
+
+<!-- ================= HUD ================= -->
+
+<div id="hud">
+
+    🏎️ <b>AFKUR RACER</b><br>
+
+    🚗 <span id="carName"></span><br>
+
+    💨 Hız:
+    <span id="speed">0</span> KM/H<br>
+
+    📏 Mesafe:
+    <span id="distance">0</span> M<br>
+
+    🏆 Skor:
+    <span id="score">0</span><br>
+
+    💨 Drift:
+    <span id="driftScore">0</span><br>
+
+    ❤️ Can:
+    <span id="health">100</span><br>
+
+    💰 Para:
+    <span id="money">1000</span>
+
+</div>
+
+
+<button id="menuBtn" onclick="goMenu()">
+    ☰ Menü
+</button>
+
+
+<!-- ================= MOBİL ================= -->
+
+<div id="controls">
+
+    <div class="dpad">
+
+        <div></div>
+
+        <div class="key" id="up">
+            ▲
+        </div>
+
+        <div></div>
+
+        <div class="key" id="left">
+            ◀
+        </div>
+
+        <div class="key" id="down">
+            ▼
+        </div>
+
+        <div class="key" id="right">
+            ▶
+        </div>
+
+    </div>
+
+    <div class="special">
+
+        <div class="key" id="drift">
+            DRİFT
+        </div>
+
+        <div class="key" id="nitro">
+            NİTRO
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ================= ÇARPIŞMA ================= -->
+
+<div id="result">
+
+    <h1>💥 ÇARPIŞTIN!</h1>
+
+    <div class="stat">
+        📏 Mesafe:
+        <b id="finalDistance">0</b> M
+    </div>
+
+    <div class="stat">
+        🏆 Skor:
+        <b id="finalScore">0</b>
+    </div>
+
+    <div class="stat">
+        💨 Drift:
+        <b id="finalDrift">0</b>
+    </div>
+
+    <div class="stat">
+        💰 Kazanç:
+        <b id="finalMoney">0</b>
+    </div>
+
+    <button onclick="startRace()">
+        🔄 TEKRAR YARIŞ
+    </button>
+
+    <button onclick="openGarage()">
+        🏠 GARAJA GİT
+    </button>
+
+    <button onclick="goMenu()">
+        ☰ ANA MENÜ
+    </button>
+
+</div>
+
+
+<script>
+
+/* =====================================================
+   CANVAS
+===================================================== */
+
+const canvas=document.getElementById("game");
+const ctx=canvas.getContext("2d");
+
+let W=0;
+let H=0;
+
+function resize(){
+
+    W=innerWidth;
+    H=innerHeight;
+
+    canvas.width=W;
+    canvas.height=H;
+
+}
+
+resize();
+
+addEventListener("resize",resize);
+
+
+/* =====================================================
+   ARABALAR
+===================================================== */
+
+const cars=[
+
+{
+ id:0,
+ name:"Başlangıç",
+ price:0,
+ color:"#e53935",
+ speed:8,
+ turn:7,
+ nitro:18
+},
+
+{
+ id:1,
+ name:"Mavi Şimşek",
+ price:1500,
+ color:"#2196f3",
+ speed:9,
+ turn:7.4,
+ nitro:20
+},
+
+{
+ id:2,
+ name:"Yeşil Canavar",
+ price:3000,
+ color:"#22b573",
+ speed:10,
+ turn:7.7,
+ nitro:22
+},
+
+{
+ id:3,
+ name:"Sarı Turbo",
+ price:5000,
+ color:"#f5c400",
+ speed:11,
+ turn:8,
+ nitro:24
+},
+
+{
+ id:4,
+ name:"Mor X",
+ price:7000,
+ color:"#9c27b0",
+ speed:12,
+ turn:8.3,
+ nitro:27
+},
+
+{
+ id:5,
+ name:"Turuncu GT",
+ price:9000,
+ color:"#ff7043",
+ speed:13,
+ turn:8.6,
+ nitro:29
+},
+
+{
+ id:6,
+ name:"AFKUR PRO",
+ price:13000,
+ color:"#00acc1",
+ speed:15,
+ turn:9,
+ nitro:32
+},
+
+{
+ id:7,
+ name:"AFKUR X",
+ price:20000,
+ color:"#eeeeee",
+ speed:17,
+ turn:9.5,
+ nitro:35
+}
+
+];
+
+
+/* =====================================================
+   KAYIT
+===================================================== */
+
+let money=Number(
+    localStorage.getItem("afkur_money")
+);
+
+if(!Number.isFinite(money)){
+    money=1000;
+}
+
+let owned=JSON.parse(
+    localStorage.getItem("afkur_owned") || "[0]"
+);
+
+let selectedCar=Number(
+    localStorage.getItem("afkur_selected") || 0
+);
+
+let upgrades=JSON.parse(
+    localStorage.getItem("afkur_upgrades") || "{}"
+);
+
+function save(){
+
+    localStorage.setItem(
+        "afkur_money",
+        money
+    );
+
+    localStorage.setItem(
+        "afkur_owned",
+        JSON.stringify(owned)
+    );
+
+    localStorage.setItem(
+        "afkur_selected",
+        selectedCar
+    );
+
+    localStorage.setItem(
+        "afkur_upgrades",
+        JSON.stringify(upgrades)
+    );
+
+}
+
+
+/* =====================================================
+   OYUN DEĞİŞKENLERİ
+===================================================== */
+
+let playerX=0;
+let playerY=0;
+
+let speed=0;
+let distance=0;
+let score=0;
+let driftScore=0;
+
+let health=100;
+
+let roadMove=0;
+
+let running=false;
+
+let opponents=[];
+let particles=[];
+let tireMarks=[];
+
+let day=true;
+
+
+/* =====================================================
+   TUŞLAR
+===================================================== */
+
+const keys={
+    up:false,
+    down:false,
+    left:false,
+    right:false,
+    drift:false,
+    nitro:false
+};
+
+
+function bind(id,key){
+
+    const el=document.getElementById(id);
+
+    el.addEventListener(
+        "pointerdown",
+        e=>{
+            e.preventDefault();
+            keys[key]=true;
+        }
+    );
+
+    el.addEventListener(
+        "pointerup",
+        e=>{
+            e.preventDefault();
+            keys[key]=false;
+        }
+    );
+
+    el.addEventListener(
+        "pointercancel",
+        ()=>{
+            keys[key]=false;
+        }
+    );
+
+    el.addEventListener(
+        "pointerleave",
+        ()=>{
+            keys[key]=false;
+        }
+    );
+
+}
+
+bind("up","up");
+bind("down","down");
+bind("left","left");
+bind("right","right");
+bind("drift","drift");
+bind("nitro","nitro");
+
+
+/* =====================================================
+   KLAVYE
+===================================================== */
+
+addEventListener("keydown",e=>{
+
+    const k=e.key.toLowerCase();
+
+    if(k==="w" || e.key==="ArrowUp")
+        keys.up=true;
+
+    if(k==="s" || e.key==="ArrowDown")
+        keys.down=true;
+
+    if(k==="a" || e.key==="ArrowLeft")
+        keys.left=true;
+
+    if(k==="d" || e.key==="ArrowRight")
+        keys.right=true;
+
+    if(k==="shift")
+        keys.drift=true;
+
+    if(e.code==="Space"){
+        e.preventDefault();
+        keys.nitro=true;
+    }
+
+});
+
+
+addEventListener("keyup",e=>{
+
+    const k=e.key.toLowerCase();
+
+    if(k==="w" || e.key==="ArrowUp")
+        keys.up=false;
+
+    if(k==="s" || e.key==="ArrowDown")
+        keys.down=false;
+
+    if(k==="a" || e.key==="ArrowLeft")
+        keys.left=false;
+
+    if(k==="d" || e.key==="ArrowRight")
+        keys.right=false;
+
+    if(k==="shift")
+        keys.drift=false;
+
+    if(e.code==="Space")
+        keys.nitro=false;
+
+});
+
+
+/* =====================================================
+   YOL
+===================================================== */
+
+function getRoad(){
+
+    const width=Math.min(
+        560,
+        W*.78
+    );
+
+    return{
+        left:W/2-width/2,
+        right:W/2+width/2,
+        width:width
+    };
+
+}
+
+
+/* =====================================================
+   RAKİPLER
+===================================================== */
+
+function addOpponent(y){
+
+    const r=getRoad();
+
+    opponents.push({
+
+        x:
+            r.left+45+
+            Math.random()*(r.width-90),
+
+        y:y,
+
+        speed:
+            1.5+
+            Math.random()*3.5,
+
+        color:[
+            "#ffffff",
+            "#00bcd4",
+            "#ff9800",
+            "#8bc34a",
+            "#ff4081",
+            "#9c27b0",
+            "#795548"
+        ][
+            Math.floor(Math.random()*7)
+        ]
+
+    });
+
+}
+
+
+function createOpponents(){
+
+    opponents=[];
+
+    for(let i=0;i<9;i++){
+
+        addOpponent(
+            -180-
+            i*190-
+            Math.random()*250
+        );
+
+    }
+
+}
+
+
+/* =====================================================
+   PARÇACIK
+===================================================== */
+
+function makeSmoke(x,y){
+
+    for(let i=0;i<3;i++){
+
+        particles.push({
+
+            x:x+(Math.random()-.5)*20,
+
+            y:y+38,
+
+            size:
+                4+
+                Math.random()*8,
+
+            life:1
+
+        });
+
+    }
+
+}
+
+
+function makeTire(x,y){
+
+    tireMarks.push({
+
+        x:x,
+        y:y,
+        life:1
+
+    });
+
+}
+
+
+/* =====================================================
+   ARABA ÇİZ
+===================================================== */
+
+function drawCar(x,y,color,player=false){
+
+    ctx.save();
+
+    ctx.translate(x,y);
+
+    /* TEKER */
+
+    ctx.fillStyle="#050505";
+
+    ctx.fillRect(-30,-25,9,30);
+    ctx.fillRect(21,-25,9,30);
+    ctx.fillRect(-30,15,9,30);
+    ctx.fillRect(21,15,9,30);
+
+    /* GÖVDE */
+
+    ctx.fillStyle=color;
+
+    ctx.beginPath();
+
+    ctx.roundRect(
+        -24,
+        -42,
+        48,
+        84,
+        12
+    );
+
+    ctx.fill();
+
+    /* CAM */
+
+    ctx.fillStyle="#172331";
+
+    ctx.beginPath();
+
+    ctx.roundRect(
+        -17,
+        -25,
+        34,
+        25,
+        7
+    );
+
+    ctx.fill();
+
+    /* FAR */
+
+    ctx.fillStyle=
+        player ? "#ffffff" : "#ff3333";
+
+    ctx.fillRect(-18,27,12,5);
+    ctx.fillRect(6,27,12,5);
+
+    if(player){
+
+        ctx.fillStyle="#fff";
+
+        ctx.fillRect(-18,-38,12,4);
+        ctx.fillRect(6,-38,12,4);
+
+    }
+
+    ctx.restore();
+
+}
+
+
+/* =====================================================
+   ŞEHİR
+===================================================== */
+
+function drawCity(){
+
+    const r=getRoad();
+
+    ctx.fillStyle=
+        day ? "#237437" : "#071c0c";
+
+    ctx.fillRect(0,0,W,H);
+
+    /* BİNALAR */
+
+    let block=110;
+
+    for(let y=-100;y<H+150;y+=block){
+
+        let yy=
+            y+
+            (roadMove*.35%block);
+
+        /* SOL */
+
+        ctx.fillStyle=
+            day ? "#555" : "#22283b";
+
+        ctx.fillRect(
+            0,
+            yy,
+            Math.max(0,r.left-15),
+            80
+        );
+
+        /* SAĞ */
+
+        ctx.fillRect(
+            r.right+15,
+            yy,
+            Math.max(0,W-r.right-15),
+            80
+        );
+
+        /* PENCERELER */
+
+        ctx.fillStyle=
+            day ? "#ffd95a" : "#ffe66d";
+
+        for(
+            let x=15;
+            x<r.left-25;
+            x+=35
+        ){
+
+            ctx.fillRect(
+                x,
+                yy+15,
+                12,
+                16
+            );
+
+        }
+
+        for(
+            let x=r.right+25;
+            x<W-15;
+            x+=35
+        ){
+
+            ctx.fillRect(
+                x,
+                yy+15,
+                12,
+                16
+            );
+
+        }
+
+    }
+
+}
+
+
+/* =====================================================
+   YOL ÇİZ
+===================================================== */
+
+function drawRoad(){
+
+    const r=getRoad();
+
+    drawCity();
+
+    /* ASFALT */
+
+    ctx.fillStyle=
+        day ? "#343434" : "#24242b";
+
+    ctx.fillRect(
+        r.left,
+        0,
+        r.width,
+        H
+    );
+
+    /* KENAR */
+
+    ctx.fillStyle="#eee";
+
+    ctx.fillRect(
+        r.left,
+        0,
+        6,
+        H
+    );
+
+    ctx.fillRect(
+        r.right-6,
+        0,
+        6,
+        H
+    );
+
+    /* ŞERİTLER */
+
+    ctx.fillStyle="#ddd";
+
+    const dash=60;
+    const gap=60;
+
+    for(
+        let y=-dash;
+        y<H+dash;
+        y+=dash+gap
+    ){
+
+        ctx.fillRect(
+            W/2-5,
+            y+
+            (roadMove%(dash+gap)),
+            10,
+            dash
+        );
+
+    }
+
+}
+
+
+/* =====================================================
+   GÜNCELLE
+===================================================== */
+
+function update(){
+
+    if(!running)
+        return;
+
+    const car=cars[selectedCar];
+
+    let target=0;
+
+    let upgrade =
+        upgrades[selectedCar] || {
+            speed:0,
+            turn:0
+        };
+
+    let maxSpeed=
+        car.speed+
+        upgrade.speed*.8;
+
+    let turn=
+        car.turn+
+        upgrade.turn*.35;
+
+    /* GAZ */
+
+    if(keys.up)
+        target=maxSpeed;
+
+    /* GERİ */
+
+    if(keys.down)
+        target=-3;
+
+    /* NİTRO */
+
+    if(
+        keys.nitro &&
+        keys.up
+    ){
+
+        target=
+            car.nitro+
+            upgrade.speed;
+
+    }
+
+    /* DRIFT */
+
+    if(keys.drift)
+        target*=.78;
+
+    speed +=
+        (target-speed)*.045;
+
+    if(!keys.up && !keys.down)
+        speed*=.97;
+
+    if(speed<0)
+        speed=0;
+
+
+    /* SAĞ SOL */
+
+    if(keys.left)
+        playerX-=turn;
+
+    if(keys.right)
+        playerX+=turn;
+
+
+    /* YOL SINIRI */
+
+    const r=getRoad();
+
+    const minX=r.left+38;
+    const maxX=r.right-38;
+
+    if(playerX<minX)
+        playerX=minX;
+
+    if(playerX>maxX)
+        playerX=maxX;
+
+
+    /* MESAFE */
+
+    distance+=
+        Math.max(0,speed)*.11;
+
+    score+=
+        Math.max(0,speed)*.08;
+
+
+    /* DRIFT */
+
+    if(
+        keys.drift &&
+        speed>3 &&
+        (keys.left||keys.right)
+    ){
+
+        driftScore+=
+            Math.abs(speed)*.13;
+
+        score+=
+            Math.abs(speed)*.04;
+
+        if(Math.random()<.65)
+            makeSmoke(playerX,playerY);
+
+        if(Math.random()<.25)
+            makeTire(
+                playerX-15,
+                playerY+35
+            );
+
+        if(Math.random()<.015)
+            money+=1;
+
+    }
+
+
+    /* YOL */
+
+    roadMove+=
+        speed*2;
+
+
+    /* RAKİPLER */
+
+    for(const enemy of opponents){
+
+        enemy.y+=
+            speed-enemy.speed;
+
+
+        if(enemy.y>H+150){
+
+            enemy.y=
+                -150-
+                Math.random()*350;
+
+            enemy.x=
+                r.left+45+
+                Math.random()*
+                (r.width-90);
+
+            /* TRAFİK ÖDÜL */
+
+            money+=2;
+
+        }
+
+
+        /* ÇARPIŞMA */
+
+        if(
+            Math.abs(enemy.x-playerX)<43 &&
+            Math.abs(enemy.y-playerY)<72
+        ){
+
+            health-=35;
+
+            enemy.y=-300;
+
+            speed*=.35;
+
+            makeSmoke(
+                playerX,
+                playerY
+            );
+
+            if(health<=0){
+
+                crash();
+
+                return;
+
+            }
+
+        }
+
+    }
+
+
+    /* DUMAN */
+
+    for(
+        let i=particles.length-1;
+        i>=0;
+        i--
+    ){
+
+        const p=particles[i];
+
+        p.y+=.7;
+        p.size+=.3;
+        p.life-=.025;
+
+        if(p.life<=0)
+            particles.splice(i,1);
+
+    }
+
+
+    /* LASTİK İZİ */
+
+    for(
+        let i=tireMarks.length-1;
+        i>=0;
+        i--
+    ){
+
+        tireMarks[i].life-=.01;
+
+        if(tireMarks[i].life<=0)
+            tireMarks.splice(i,1);
+
+    }
+
+
+    /* HUD */
+
+    document.getElementById("speed")
+        .textContent=
+        Math.floor(speed*12);
+
+    document.getElementById("distance")
+        .textContent=
+        Math.floor(distance);
+
+    document.getElementById("score")
+        .textContent=
+        Math.floor(score);
+
+    document.getElementById("driftScore")
+        .textContent=
+        Math.floor(driftScore);
+
+    document.getElementById("health")
+        .textContent=
+        Math.max(0,Math.floor(health));
+
+    document.getElementById("money")
+        .textContent=
+        Math.floor(money);
+
+}
+
+
+/* =====================================================
+   ÇİZ
+===================================================== */
+
+function draw(){
+
+    ctx.clearRect(
+        0,
+        0,
+        W,
+        H
+    );
+
+    drawRoad();
+
+
+    /* LASTİK İZLERİ */
+
+    for(const mark of tireMarks){
+
+        ctx.globalAlpha=
+            mark.life*.4;
+
+        ctx.fillStyle="#111";
+
+        ctx.fillRect(
+            mark.x-3,
+            mark.y,
+            6,
+            25
+        );
+
+    }
+
+    ctx.globalAlpha=1;
+
+
+    /* RAKİPLER */
+
+    for(const enemy of opponents){
+
+        drawCar(
+            enemy.x,
+            enemy.y,
+            enemy.color,
+            false
+        );
+
+    }
+
+
+    /* DUMAN */
+
+    for(const p of particles){
+
+        ctx.globalAlpha=p.life;
+
+        ctx.fillStyle="#ddd";
+
+        ctx.beginPath();
+
+        ctx.arc(
+            p.x,
+            p.y,
+            p.size,
+            0,
+            Math.PI*2
+        );
+
+        ctx.fill();
+
+    }
+
+    ctx.globalAlpha=1;
+
+
+    /* OYUNCU */
+
+    drawCar(
+        playerX,
+        playerY,
+        cars[selectedCar].color,
+        true
+    );
+
+
+    /* NİTRO */
+
+    if(
+        keys.nitro &&
+        keys.up &&
+        speed>4
+    ){
+
+        ctx.fillStyle="#ff9d00";
+
+        ctx.beginPath();
+
+        ctx.moveTo(
+            playerX-12,
+            playerY+40
+        );
+
+        ctx.lineTo(
+            playerX,
+            playerY+75+
+            Math.random()*12
+        );
+
+        ctx.lineTo(
+            playerX+12,
+            playerY+40
+        );
+
+        ctx.fill();
+
+    }
+
+
+    /* GECE */
+
+    if(!day){
+
+        ctx.fillStyle="#0004";
+
+        ctx.fillRect(
+            0,
+            0,
+            W,
+            H
+        );
+
+    }
+
+}
+
+
+/* =====================================================
+   DÖNGÜ
+===================================================== */
+
+function loop(){
+
+    update();
+    draw();
+
+    requestAnimationFrame(loop);
+
+}
+
+loop();
+
+
+/* =====================================================
+   YARIŞ BAŞLAT
+===================================================== */
+
+function startRace(){
+
+    document.getElementById("menu")
+        .style.display="none";
+
+    document.getElementById("garage")
+        .style.display="none";
+
+    document.getElementById("result")
+        .style.display="none";
+
+    document.getElementById("hud")
+        .style.display="block";
+
+    document.getElementById("menuBtn")
+        .style.display="block";
+
+    document.getElementById("controls")
+        .style.display="flex";
+
+
+    playerX=W/2;
+    playerY=H*.72;
+
+    speed=0;
+    distance=0;
+    score=0;
+    driftScore=0;
+    health=100;
+
+    particles=[];
+    tireMarks=[];
+
+    createOpponents();
+
+    document.getElementById("carName")
+        .textContent=
+        cars[selectedCar].name;
+
+    running=true;
+
+}
+
+
+/* =====================================================
+   ÇARPIŞMA
+===================================================== */
+
+function crash(){
+
+    if(!running)
+        return;
+
+    running=false;
+
+    /* ÖDÜL */
+
+    const reward=
+        Math.floor(score/80)+
+        Math.floor(driftScore/80)+
+        Math.floor(distance/300);
+
+    money+=reward;
+
+    save();
+
+    document.getElementById("finalDistance")
+        .textContent=
+        Math.floor(distance);
+
+    document.getElementById("finalScore")
+        .textContent=
+        Math.floor(score);
+
+    document.getElementById("finalDrift")
+        .textContent=
+        Math.floor(driftScore);
+
+    document.getElementById("finalMoney")
+        .textContent=
+        reward;
+
+    document.getElementById("result")
+        .style.display="flex";
+
+    document.getElementById("hud")
+        .style.display="none";
+
+    document.getElementById("menuBtn")
+        .style.display="none";
+
+    document.getElementById("controls")
+        .style.display="none";
+
+}
+
+
+/* =====================================================
+   GARAJ
+===================================================== */
+
+function openGarage(){
+
+    running=false;
+
+    document.getElementById("menu")
+        .style.display="none";
+
+    document.getElementById("result")
+        .style.display="none";
+
+    document.getElementById("hud")
+        .style.display="none";
+
+    document.getElementById("menuBtn")
+        .style.display="none";
+
+    document.getElementById("controls")
+        .style.display="none";
+
+    document.getElementById("garage")
+        .style.display="block";
+
+    drawGarage();
+
+}
+
+
+function drawGarage(){
+
+    document.getElementById("garageMoney")
+        .textContent=
+        "💰 "+
+        Math.floor(money);
+
+    const box=
+        document.getElementById("cars");
+
+    box.innerHTML="";
+
+
+    cars.forEach(car=>{
+
+        const div=
+            document.createElement("div");
+
+        div.className="card";
+
+        if(car.id===selectedCar)
+            div.classList.add("selected");
+
+
+        const isOwned=
+            owned.includes(car.id);
+
+        const up=
+            upgrades[car.id] || {
+                speed:0,
+                turn:0
+            };
+
+
+        div.innerHTML=`
+
+            <h2>${car.name}</h2>
+
+            <div
+                class="preview"
+                style="background:${car.color}">
+            </div>
+
+            <p>💨 Hız: ${car.speed+up.speed}</p>
+
+            <p>↔️ Yol tutuş: ${car.turn+up.turn}</p>
+
+            <p>⚡ Nitro: ${car.nitro}</p>
+
+            ${
+                isOwned
+                ?
+                `
+                <button onclick="selectCar(${car.id})">
+                    ${
+                        car.id===selectedCar
+                        ? "✅ SEÇİLİ"
+                        : "🚗 SEÇ"
+                    }
+                </button>
+
+                <br>
+
+                <button onclick="upgradeSpeed(${car.id})">
+                    ⬆️ HIZ +1
+                </button>
+
+                <button onclick="upgradeTurn(${car.id})">
+                    ↔️ TUTUŞ +1
+                </button>
+                `
+                :
+                `
+                <button onclick="buyCar(${car.id})">
+                    💰 ${car.price}
+                </button>
+                `
+            }
+
+        `;
+
+        box.appendChild(div);
+
+    });
+
+}
+
+
+/* =====================================================
+   ARABA SATIN AL
+===================================================== */
+
+function buyCar(id){
+
+    const car=cars[id];
+
+    if(owned.includes(id))
+        return;
+
+    if(money<car.price){
+
+        alert(
+            "Yeterli paran yok! 💰"
+        );
+
+        return;
+
+    }
+
+    money-=car.price;
+
+    owned.push(id);
+
+    selectedCar=id;
+
+    save();
+
+    drawGarage();
+
+}
+
+
+/* =====================================================
+   ARABA SEÇ
+===================================================== */
+
+function selectCar(id){
+
+    if(!owned.includes(id))
+        return;
+
+    selectedCar=id;
+
+    save();
+
+    drawGarage();
+
+}
+
+
+/* =====================================================
+   HIZ GELİŞTİR
+===================================================== */
+
+function upgradeSpeed(id){
+
+    if(!owned.includes(id))
+        return;
+
+    if(!upgrades[id]){
+
+        upgrades[id]={
+            speed:0,
+            turn:0
+        };
+
+    }
+
+    const price=
+        800+
+        upgrades[id].speed*700;
+
+    if(money<price){
+
+        alert(
+            "Hız geliştirmesi için "+
+            price+
+            " para gerekiyor."
+        );
+
+        return;
+
+    }
+
+    money-=price;
+
+    upgrades[id].speed++;
+
+    save();
+
+    drawGarage();
+
+}
+
+
+/* =====================================================
+   TUTUŞ GELİŞTİR
+===================================================== */
+
+function upgradeTurn(id){
+
+    if(!owned.includes(id))
+        return;
+
+    if(!upgrades[id]){
+
+        upgrades[id]={
+            speed:0,
+            turn:0
+        };
+
+    }
+
+    const price=
+        800+
+        upgrades[id].turn*700;
+
+    if(money<price){
+
+        alert(
+            "Yol tutuş geliştirmesi için "+
+            price+
+            " para gerekiyor."
+        );
+
+        return;
+
+    }
+
+    money-=price;
+
+    upgrades[id].turn++;
+
+    save();
+
+    drawGarage();
+
+}
+
+
+/* =====================================================
+   GÜNDÜZ / GECE
+===================================================== */
+
+function toggleDayNight(){
+
+    day=!day;
+
+}
+
+
+/* =====================================================
+   ANA MENÜ
+===================================================== */
+
+function goMenu(){
+
+    running=false;
+
+    document.getElementById("garage")
+        .style.display="none";
+
+    document.getElementById("result")
+        .style.display="none";
+
+    document.getElementById("hud")
+        .style.display="none";
+
+    document.getElementById("menuBtn")
+        .style.display="none";
+
+    document.getElementById("controls")
+        .style.display="none";
+
+    document.getElementById("menu")
+        .style.display="flex";
+
+    document.getElementById("menuMoney")
+        .textContent=
+        Math.floor(money);
+
+}
+
+
+/* =====================================================
+   BAŞLANGIÇ
+===================================================== */
+
+document.getElementById("menuMoney")
+    .textContent=
+    Math.floor(money);
+
+</script>
+
+</body>
+</html>
